@@ -5,6 +5,8 @@ trait OwnableTrait<T> {
     fn transfer_ownership(ref self: T, new_owner: ContractAddress);
     fn get_owner(self: @T) -> ContractAddress;
     fn change_message(ref self: T, new_message: felt252);
+    fn read_score(ref self: T, keyval: felt252) -> u32;
+    fn add_new_score(ref self: T, keyval: felt252, scoreval: u32);
 }
 
 #[starknet::contract]
@@ -41,6 +43,7 @@ mod Ownable {
     struct Storage {
         owner: ContractAddress,
         mess: felt252,
+        scores: LegacyMap<felt252, u32>,
     }
 
     #[constructor]
@@ -73,6 +76,14 @@ mod Ownable {
                 prev_message: prev_message,
                 new_message: new_message,
             }));
+        }
+
+        fn read_score(ref self: ContractState, keyval: felt252) -> u32 {
+            self.scores.read(keyval)
+        }
+
+        fn add_new_score(ref self: ContractState, keyval: felt252, scoreval: u32) {
+            self.scores.write(keyval, scoreval);
         }
     }
 
