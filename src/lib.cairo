@@ -6,6 +6,7 @@ trait OwnableTrait<T> {
     fn get_owner(self: @T) -> ContractAddress;
     fn change_message(ref self: T, new_message: felt252);
     fn read_score(ref self: T, keyval: felt252) -> u32;
+    fn read_all_scores(ref self: T) -> Array<(felt252, u32)>;
     fn add_new_score(ref self: T, keyval: felt252, scoreval: u32);
 }
 
@@ -13,6 +14,7 @@ trait OwnableTrait<T> {
 mod Ownable {
     use super::ContractAddress;
     use starknet::get_caller_address;
+    use array::ArrayTrait;
 
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -43,6 +45,8 @@ mod Ownable {
     struct Storage {
         owner: ContractAddress,
         mess: felt252,
+        score_size: u32,
+        keys: LegacyMap<u32, felt252>,
         scores: LegacyMap<felt252, u32>,
     }
 
@@ -50,6 +54,7 @@ mod Ownable {
     fn constructor(ref self: ContractState, init_owner: ContractAddress) {
         self.owner.write(init_owner);
         self.mess.write('great');
+        self.score_size.write(0);
     }
 
     #[external(v0)]
@@ -82,8 +87,28 @@ mod Ownable {
             self.scores.read(keyval)
         }
 
+        fn read_all_scores(ref self: ContractState) -> Array<(felt252, u32)> {
+            let s = self.score_size.read();
+            let mut arr = ArrayTrait::new();
+            let mut i = 0;
+            loop {
+                if i > s {
+                    break ();
+                }
+                let mut name = self.keys.read(i);
+                let mut score = self.scores.read(name);
+                arr.append((name, score));
+                i += 1;
+            };
+            arr
+            
+        }
+
         fn add_new_score(ref self: ContractState, keyval: felt252, scoreval: u32) {
+            let size = self.score_size.read();
+            self.keys.write(size, keyval);
             self.scores.write(keyval, scoreval);
+            self.score_size.write(size + 1);
         }
     }
 
