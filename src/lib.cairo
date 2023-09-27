@@ -4,9 +4,10 @@ use starknet::ContractAddress;
 trait OwnableTrait<T> {
     fn transfer_ownership(ref self: T, new_owner: ContractAddress);
     fn get_owner(self: @T) -> ContractAddress;
+    fn read_message(self: @T) -> felt252;
     fn change_message(ref self: T, new_message: felt252);
-    fn read_score(ref self: T, keyval: felt252) -> u32;
-    fn read_all_scores(ref self: T) -> Array<(felt252, u32)>;
+    fn read_score(self: @T, keyval: felt252) -> u32;
+    fn read_all_scores(self: @T) -> Array<(felt252, u32)>;
     fn add_new_score(ref self: T, keyval: felt252, scoreval: u32);
 }
 
@@ -73,6 +74,10 @@ mod Ownable {
             self.owner.read()
         }
 
+        fn read_message(self: @ContractState) -> felt252 {
+            self.mess.read()
+        }
+
         fn change_message(ref self: ContractState, new_message: felt252) {
             self.only_owner();
             let prev_message = self.mess.read();
@@ -83,11 +88,11 @@ mod Ownable {
             }));
         }
 
-        fn read_score(ref self: ContractState, keyval: felt252) -> u32 {
+        fn read_score(self: @ContractState, keyval: felt252) -> u32 {
             self.scores.read(keyval)
         }
 
-        fn read_all_scores(ref self: ContractState) -> Array<(felt252, u32)> {
+        fn read_all_scores(self: @ContractState) -> Array<(felt252, u32)> {
             let s = self.score_size.read();
             let mut arr = ArrayTrait::new();
             let mut i = 0;
@@ -105,10 +110,17 @@ mod Ownable {
         }
 
         fn add_new_score(ref self: ContractState, keyval: felt252, scoreval: u32) {
-            let size = self.score_size.read();
-            self.keys.write(size, keyval);
-            self.scores.write(keyval, scoreval);
-            self.score_size.write(size + 1);
+            let current_val = self.scores.read(keyval);
+            if current_val == 0 {
+                let size = self.score_size.read();
+                self.keys.write(size, keyval);
+                self.scores.write(keyval, scoreval);
+                self.score_size.write(size + 1);
+            }
+            else {
+                self.scores.write(keyval, scoreval);
+            }
+            
         }
     }
 
