@@ -132,3 +132,60 @@ mod Ownable {
         }
     }
 }
+
+#[cfg(test)]
+mod tests{
+    use demo::Ownable;
+    use demo::{OwnableTraitDispatcher, OwnableTraitDispatcherTrait};
+    use starknet::{ContractAddress,Into, TryInto, OptionTrait};
+    use starknet::syscalls::deploy_syscall;
+    use starknet::get_caller_address;
+    use result::ResultTrait;
+    use array::{ArrayTrait, SpanTrait};
+    
+
+
+    #[test]
+    #[available_gas(1000000)]
+    fn owner_unit_test(){
+        
+        let admin: ContractAddress = 'admin'.try_into().unwrap();
+        let mut calldata = array![admin.into()];
+        let (address0, _) = deploy_syscall(Ownable::TEST_CLASS_HASH.try_into().unwrap(), 0, calldata.span(), false).unwrap();
+        let mut contract0 = OwnableTraitDispatcher{contract_address: address0};
+        assert (admin == contract0.get_owner(), 'not the owner');
+        
+
+    }
+
+
+    #[test]
+    #[available_gas(1000000)]
+    fn message_unit_test(){
+        
+        let admin: ContractAddress = 'admin'.try_into().unwrap();
+        let mut calldata = array![admin.into()];
+        let (address0, _) = deploy_syscall(Ownable::TEST_CLASS_HASH.try_into().unwrap(), 0, calldata.span(), false).unwrap();
+        let mut contract0 = OwnableTraitDispatcher{contract_address: address0};
+        assert ('great' == contract0.read_message(), 'not the right message');
+        
+
+    }
+
+   
+
+
+    #[test]
+    #[available_gas(10000000)]
+    fn message_change_unit_test(){
+        
+        let admin: ContractAddress = get_caller_address();
+        let mut calldata = array![admin.into()];
+        let (address0, _) = deploy_syscall(Ownable::TEST_CLASS_HASH.try_into().unwrap(), 0, calldata.span(), false).unwrap();
+        let mut contract0 = OwnableTraitDispatcher{contract_address: address0};
+        contract0.change_message('good');
+        assert ('good' == contract0.read_message(), 'not the right message');
+        
+
+    }
+}
